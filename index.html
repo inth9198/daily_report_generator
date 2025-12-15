@@ -842,11 +842,6 @@
 
             generateReport();
             clearForm();
-            
-            // 다음 날로 날짜 자동 증가
-            const nextDate = new Date(finalDate);
-            nextDate.setDate(nextDate.getDate() + 1);
-            document.getElementById('reportDate').value = nextDate.toISOString().split('T')[0];
         }
 
         function generateReport() {
