@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일일보고 작성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 28px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #764ba2;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #764ba2;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #62408a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .sprint-item,
+        .day-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .sprint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .output-area {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            position: sticky;
+            top: 0;
+            margin-bottom: 15px;
+        }
+
+        .job-section {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .time-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .job-select-group {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .job-select-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .job-select-wrapper select {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            margin: 15px 0;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #000;
+        }
+
+        .job-history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .job-history-item h3 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .job-history-item p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .warning-text {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .job-summary-item {
+            display: grid;
+            grid-template-columns: 1fr 150px 80px;
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .job-summary-item:hover {
+            background: #f0f4ff;
+        }
+
+        .job-summary-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .job-summary-number {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .job-summary-name {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .job-summary-time {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .job-summary-time input {
+            width: 50px;
+            padding: 5px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .job-summary-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #218838;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 입력 패널 -->
+        <div class="panel">
+            <h1>📝 일일보고 작성기</h1>
+            
+            <div class="form-group">
+                <label>작성자 이름</label>
+                <input type="text" id="userName" placeholder="이름을 입력하세요">
+            </div>
+
+            <div class="form-group">
+                <label>보고 날짜</label>
+                <input type="date" id="reportDate">
+            </div>
+
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="isVacation">
+                    연차/휴가
+                </label>
+            </div>
+
+            <div id="workContent">
+                <h2>개발(스프린트) 단위 작업</h2>
+                <div id="sprintContainer"></div>
+                <button class="btn btn-secondary" onclick="addSprint()">+ 개발 추가</button>
+
+                <h2>기타 메모 / Daily 이슈</h2>
+                <div class="form-group">
+                    <textarea id="dailyIssues" placeholder="기타 이슈나 메모를 입력하세요"></textarea>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="addToReport()">보고서에 추가</button>
+                <button class="btn btn-secondary" onclick="clearForm()">입력 초기화</button>
+                <button class="btn btn-secondary" onclick="showJobHistory()">잡 히스토리 보기</button>
+            </div>
+        </div>
+
+        <!-- 출력 패널 -->
+        <div class="panel">
+            <h1>📄 생성된 보고서</h1>
+            
+            <!-- 잡 누적시간 요약 -->
+            <div id="jobSummarySection" style="margin-bottom: 20px; display: none;">
+                <h2 style="font-size: 16px; color: #667eea; margin-bottom: 10px;">📊 잡 누적시간 요약</h2>
+                <div id="jobSummaryList" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                </div>
+            </div>
+            
+            <button class="btn btn-success copy-btn" onclick="copyToClipboard()">📋 복사하기</button>
+            <div class="output-area" id="output">여기에 생성된 보고서가 표시됩니다.</div>
+            <button class="btn btn-danger" onclick="clearReport()">보고서 초기화</button>
+        </div>
+    </div>
+
+    <!-- 잡 히스토리 모달 -->
+    <div id="jobHistoryModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeJobHistory()">&times;</span>
+            <h1>잡 히스토리</h1>
+            <div id="jobHistoryContent"></div>
+            <button class="btn btn-danger" onclick="clearJobHistory()">히스토리 전체 삭제</button>
+        </div>
+    </div>
+
+    <script>
+        let reportData = [];
+        let sprintCount = 0;
+        let jobHistory = {}; // 잡 히스토리
+
+        // 페이지 로드 시 오늘 날짜로 초기화 및 로컬 스토리지 불러오기
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('reportDate').value = today;
+            
+            // 로컬 스토리지에서 잡 히스토리 불러오기
+            const savedHistory = localStorage.getItem('jobHistory');
+            if (savedHistory) {
+                jobHistory = JSON.parse(savedHistory);
+            }
+            
+            // 사용자 이름 불러오기
+            const savedUserName = localStorage.getItem('userName');
+            if (savedUserName) {
+                document.getElementById('userName').value = savedUserName;
+            }
+            
+            // 연차 체크박스 이벤트
+            document.getElementById('isVacation').addEventListener('change', function() {
+                const workContent = document.getElementById('workContent');
+                workContent.style.display = this.checked ? 'none' : 'block';
+            });
+            
+            // 사용자 이름 저장 이벤트
+            document.getElementById('userName').addEventListener('blur', function() {
+                localStorage.setItem('userName', this.value);
+            });
+            
+            // 보고 날짜 변경시 모든 스프린트 기간 체크
+            document.getElementById('reportDate').addEventListener('change', function() {
+                checkAllDurations();
+            });
+            
+            // 첫 개발 항목 자동 추가
+            addSprint();
+            
+            // 잡 요약 렌더링 (저장된 데이터가 있으면)
+            renderJobSummary();
+        };
+
+        // 잡 히스토리 보기
+        function showJobHistory() {
+            if (Object.keys(jobHistory).length === 0) {
+                alert('저장된 잡 히스토리가 없습니다.');
+                return;
+            }
+            
+            let historyHTML = '';
+            Object.keys(jobHistory).sort().forEach(jobNumber => {
+                const job = jobHistory[jobNumber];
+                const hours = Math.floor(job.totalMinutes / 60);
+                const minutes = job.totalMinutes % 60;
+                historyHTML += `
+                    <div class="job-history-item">
+                        <h3>${jobNumber} - ${job.jobName}</h3>
+                        <p><strong>누적시간:</strong> ${hours}시간 ${minutes}분 (${job.totalMinutes}분)</p>
+                        <p><strong>작성자:</strong> ${job.userName}</p>
+                        <p><strong>최초 사용일:</strong> ${job.firstUsedDate}</p>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('jobHistoryContent').innerHTML = historyHTML;
+            document.getElementById('jobHistoryModal').style.display = 'block';
+        }
+
+        function closeJobHistory() {
+            document.getElementById('jobHistoryModal').style.display = 'none';
+        }
+
+        function clearJobHistory() {
+            if (confirm('정말로 모든 잡 히스토리를 삭제하시겠습니까?')) {
+                jobHistory = {};
+                saveJobHistory();
+                closeJobHistory();
+                alert('잡 히스토리가 초기화되었습니다.');
+            }
+        }
+
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('jobHistoryModal');
+            if (event.target == modal) {
+                closeJobHistory();
+            }
+        }
+
+        // 작업 기간 체크 (2일 이상 경고)
+        function checkWorkDuration(startDate, reportDate) {
+            const start = new Date(startDate);
+            const end = new Date(reportDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        // 개별 스프린트 기간 체크
+        function checkDuration(sprintId) {
+            const startDateInput = document.getElementById(`sprintStartDate-${sprintId}`);
+            const reportDate = document.getElementById('reportDate').value;
+            const warningDiv = document.getElementById(`durationWarning-${sprintId}`);
+            
+            if (!startDateInput || !reportDate || !warningDiv) return;
+            
+            const days = checkWorkDuration(startDateInput.value, reportDate);
+            if (days >= 2) {
+                warningDiv.textContent = `⚠ 작업 기간이 ${days}일입니다. 2일 이상 진행시 지연사유를 작성해주세요.`;
+            } else {
+                warningDiv.textContent = '';
+            }
+        }
+
+        // 모든 스프린트 기간 체크
+        function checkAllDurations() {
+            const sprintElements = document.querySelectorAll('.sprint-item');
+            sprintElements.forEach(element => {
+                const id = element.id.split('-')[1];
+                checkDuration(id);
+            });
+        }
+
+        // 로컬 스토리지에 잡 히스토리 저장
+        function saveJobHistory() {
+            localStorage.setItem('jobHistory', JSON.stringify(jobHistory));
+        }
+
+        // 잡 번호로 히스토리 정보 가져오기
+        function getJobInfo(jobNumber) {
+            return jobHistory[jobNumber] || null;
+        }
+
+        // 잡 정보 업데이트
+        function updateJobInfo(jobNumber, jobName, totalMinutes) {
+            const userName = document.getElementById('userName').value;
+            if (!jobHistory[jobNumber]) {
+                jobHistory[jobNumber] = {
+                    jobName: jobName,
+                    totalMinutes: 0,
+                    userName: userName,
+                    firstUsedDate: new Date().toISOString().split('T')[0]
+                };
+            }
+            jobHistory[jobNumber].totalMinutes = totalMinutes;
+            jobHistory[jobNumber].jobName = jobName; // 이름 업데이트
+            saveJobHistory();
+        }
+
+        function addSprint() {
+            sprintCount++;
+            const container = document.getElementById('sprintContainer');
+            const sprintDiv = document.createElement('div');
+            sprintDiv.className = 'sprint-item';
+            sprintDiv.id = `sprint-${sprintCount}`;
+            
+            // 기존 잡 번호 목록 생성
+            let jobSelectOptions = '<option value="">-- 기존 잡 선택 --</option>';
+            Object.keys(jobHistory).sort().forEach(jobNum => {
+                const job = jobHistory[jobNum];
+                const hours = Math.floor(job.totalMinutes / 60);
+                const minutes = job.totalMinutes % 60;
+                jobSelectOptions += `<option value="${jobNum}">${jobNum} - ${job.jobName} (${hours}h ${minutes}m)</option>`;
+            });
+            
+            sprintDiv.innerHTML = `
+                <div class="sprint-header">
+                    <strong>개발 #${sprintCount}</strong>
+                    <button class="btn btn-danger" onclick="removeSprint(${sprintCount})" style="padding: 5px 10px; margin: 0;">삭제</button>
+                </div>
+                <div class="form-group">
+                    <label>잡 번호 (예: A25_00000)</label>
+                    <div class="job-select-group">
+                        <input type="text" id="jobNumber-${sprintCount}" placeholder="A25_00000 (직접 입력 또는 아래에서 선택)" onchange="loadJobInfo(${sprintCount})">
+                    </div>
+                </div>
+                <div class="form-group" id="existingJobGroup-${sprintCount}" style="${Object.keys(jobHistory).length > 0 ? '' : 'display: none;'}">
+                    <label>또는 기존 잡 번호 선택</label>
+                    <select id="jobSelect-${sprintCount}" onchange="selectExistingJob(${sprintCount})" style="background: #f0f4ff;">
+                        ${jobSelectOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>잡명</label>
+                    <input type="text" id="jobName-${sprintCount}" placeholder="잡 이름">
+                </div>
+
+                <div class="form-group">
+                    <label>개발명</label>
+                    <input type="text" id="sprintName-${sprintCount}" placeholder="개발 이름">
+                </div>
+                <div class="form-group">
+                    <label>이 개발의 작업시간</label>
+                    <div class="time-input-group">
+                        <input type="number" id="sprintHours-${sprintCount}" placeholder="시간" min="0" value="0">
+                        <input type="number" id="sprintMinutes-${sprintCount}" placeholder="분" min="0" max="59" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>지연사유 / 메모</label>
+                    <textarea id="sprintMemo-${sprintCount}" placeholder="지연사유 또는 기타 메모"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>진행상태</label>
+                    <select id="sprintStatus-${sprintCount}">
+                        <option value="진행중">진행중</option>
+                        <option value="완료">완료</option>
+                        <option value="배포완료">배포완료</option>
+                        <option value="배포대기">배포대기</option>
+                        <option value="테스트">테스트</option>
+                        <option value="진행예정">진행예정</option>
+                        <option value="중단">중단</option>
+                        <option value="폐기">폐기</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>시작일자</label>
+                    <input type="date" id="sprintStartDate-${sprintCount}" value="${new Date().toISOString().split('T')[0]}" onchange="checkDuration(${sprintCount})">
+                    <div id="durationWarning-${sprintCount}" class="warning-text"></div>
+                </div>
+                <div class="form-group" id="stopReasonGroup-${sprintCount}" style="display: none;">
+                    <label>중단/폐기 사유</label>
+                    <textarea id="stopReason-${sprintCount}" placeholder="중단 또는 폐기 사유"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>QC테스트 / 배포 정보</label>
+                    <textarea id="deployInfo-${sprintCount}" placeholder="예: QC테스트 맡김, 12/23(월) 수시배포 예정"></textarea>
+                </div>
+            `;
+            container.appendChild(sprintDiv);
+            
+            // 진행상태 변경 이벤트 추가
+            const statusSelect = document.getElementById(`sprintStatus-${sprintCount}`);
+            statusSelect.addEventListener('change', function() {
+                const stopReasonGroup = document.getElementById(`stopReasonGroup-${sprintCount}`);
+                if (this.value === '중단' || this.value === '폐기') {
+                    stopReasonGroup.style.display = 'block';
+                } else {
+                    stopReasonGroup.style.display = 'none';
+                }
+            });
+        }
+
+        // 기존 잡 번호 선택 (드롭다운에서)
+        function selectExistingJob(sprintId) {
+            const selectElement = document.getElementById(`jobSelect-${sprintId}`);
+            const jobNumber = selectElement.value;
+            
+            if (!jobNumber) return;
+            
+            // 잡 번호 입력 필드에 자동 입력
+            document.getElementById(`jobNumber-${sprintId}`).value = jobNumber;
+            
+            // 잡 정보 불러오기
+            loadJobInfo(sprintId);
+            
+            // 선택 초기화
+            selectElement.value = '';
+        }
+
+        // 잡 번호 입력시 기존 정보 불러오기
+        function loadJobInfo(sprintId) {
+            const jobNumber = document.getElementById(`jobNumber-${sprintId}`).value.trim();
+            if (jobNumber && jobHistory[jobNumber]) {
+                const job = jobHistory[jobNumber];
+                document.getElementById(`jobName-${sprintId}`).value = job.jobName;
+                
+                const hours = Math.floor(job.totalMinutes / 60);
+                const minutes = job.totalMinutes % 60;
+                
+                // 알림 표시 (옵션)
+                const existingJobGroup = document.getElementById(`existingJobGroup-${sprintId}`);
+                if (existingJobGroup) {
+                    const infoText = `✓ 기존 잡 정보: 누적 ${hours}시간 ${minutes}분, 작성자: ${job.userName}`;
+                    
+                    // 기존 정보 표시 div가 없으면 생성
+                    let infoDiv = document.getElementById(`jobInfo-${sprintId}`);
+                    if (!infoDiv) {
+                        infoDiv = document.createElement('div');
+                        infoDiv.id = `jobInfo-${sprintId}`;
+                        infoDiv.style.cssText = 'color: #28a745; font-size: 12px; margin-top: 5px; font-weight: 600;';
+                        document.getElementById(`jobNumber-${sprintId}`).parentElement.appendChild(infoDiv);
+                    }
+                    infoDiv.textContent = infoText;
+                }
+            } else {
+                // 기존 정보 표시 제거
+                const infoDiv = document.getElementById(`jobInfo-${sprintId}`);
+                if (infoDiv) {
+                    infoDiv.remove();
+                }
+            }
+        }
+
+        function removeSprint(id) {
+            const sprint = document.getElementById(`sprint-${id}`);
+            if (sprint) {
+                sprint.remove();
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayOfWeek = days[date.getDay()];
+            return `${month}/${day} (${dayOfWeek})`;
+        }
+
+        function formatTime(hours, minutes) {
+            const h = parseInt(hours) || 0;
+            const m = parseInt(minutes) || 0;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function addToReport() {
+            const reportDate = document.getElementById('reportDate').value;
+            const isVacation = document.getElementById('isVacation').checked;
+            const userName = document.getElementById('userName').value || '작성자';
+
+            // 날짜 기본값 설정
+            const finalDate = reportDate || new Date().toISOString().split('T')[0];
+
+            if (isVacation) {
+                reportData.push({
+                    date: finalDate,
+                    isVacation: true
+                });
+            } else {
+                const dailyIssues = document.getElementById('dailyIssues').value;
+
+                // 스프린트 데이터 수집
+                const sprints = [];
+                const sprintElements = document.querySelectorAll('.sprint-item');
+
+                sprintElements.forEach(element => {
+                    const id = element.id.split('-')[1];
+                    const jobNumber = document.getElementById(`jobNumber-${id}`)?.value.trim();
+                    const jobName = document.getElementById(`jobName-${id}`)?.value.trim();
+                    const name = document.getElementById(`sprintName-${id}`)?.value.trim();
+                    const hours = document.getElementById(`sprintHours-${id}`)?.value;
+                    const minutes = document.getElementById(`sprintMinutes-${id}`)?.value;
+                    const memo = document.getElementById(`sprintMemo-${id}`)?.value;
+                    const status = document.getElementById(`sprintStatus-${id}`)?.value;
+                    const startDate = document.getElementById(`sprintStartDate-${id}`)?.value;
+                    const stopReason = document.getElementById(`stopReason-${id}`)?.value;
+                    const deployInfo = document.getElementById(`deployInfo-${id}`)?.value;
+
+                    // 빈 항목은 건너뛰기
+                    if (!jobNumber && !jobName && !name) {
+                        return;
+                    }
+
+                    const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0);
+                    
+                    sprints.push({ 
+                        jobNumber: jobNumber || '미지정', 
+                        jobName: jobName || '미지정', 
+                        name: name || '개발 작업', 
+                        hours, 
+                        minutes, 
+                        memo,
+                        status,
+                        startDate,
+                        stopReason,
+                        deployInfo,
+                        totalMinutes
+                    });
+
+                    // 잡 히스토리 업데이트 (잡 번호가 있을 때만)
+                    if (jobNumber) {
+                        if (!jobHistory[jobNumber]) {
+                            jobHistory[jobNumber] = {
+                                jobName: jobName || '미지정',
+                                totalMinutes: 0,
+                                userName: userName,
+                                firstUsedDate: finalDate
+                            };
+                        }
+                        jobHistory[jobNumber].totalMinutes += totalMinutes;
+                        if (jobName) {
+                            jobHistory[jobNumber].jobName = jobName; // 최신 잡명으로 업데이트
+                        }
+                    }
+                });
+
+                saveJobHistory();
+
+                reportData.push({
+                    date: finalDate,
+                    isVacation: false,
+                    sprints,
+                    dailyIssues
+                });
+            }
+
+            generateReport();
+            clearForm();
+            
+            // 다음 날로 날짜 자동 증가
+            const nextDate = new Date(finalDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+            document.getElementById('reportDate').value = nextDate.toISOString().split('T')[0];
+        }
+
+        function generateReport() {
+            let output = '';
+            
+            // 날짜순으로 정렬
+            reportData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // 같은 날짜 데이터를 먼저 병합
+            const mergedData = {};
+            reportData.forEach(data => {
+                const dateKey = data.date;
+                if (!mergedData[dateKey]) {
+                    mergedData[dateKey] = {
+                        date: data.date,
+                        isVacation: data.isVacation,
+                        sprints: [],
+                        dailyIssues: []
+                    };
+                }
+                
+                if (data.isVacation) {
+                    mergedData[dateKey].isVacation = true;
+                }
+                
+                if (data.sprints) {
+                    mergedData[dateKey].sprints.push(...data.sprints);
+                }
+                
+                if (data.dailyIssues) {
+                    mergedData[dateKey].dailyIssues.push(data.dailyIssues);
+                }
+            });
+
+            // 병합된 데이터로 출력
+            Object.values(mergedData).forEach(data => {
+                output += formatDate(data.date) + '\n';
+                
+                if (data.isVacation) {
+                    output += '연차\n';
+                } else {
+                    // 스프린트를 잡 번호별로 그룹화
+                    const jobGroups = {};
+                    data.sprints.forEach(sprint => {
+                        if (!jobGroups[sprint.jobNumber]) {
+                            jobGroups[sprint.jobNumber] = {
+                                jobName: sprint.jobName,
+                                sprints: [],
+                                totalMinutes: 0,
+                                status: sprint.status,
+                                startDate: sprint.startDate,
+                                stopReason: sprint.stopReason,
+                                deployInfo: sprint.deployInfo
+                            };
+                        }
+                        jobGroups[sprint.jobNumber].sprints.push(sprint);
+                        jobGroups[sprint.jobNumber].totalMinutes += sprint.totalMinutes;
+                        
+                        // 잡명은 비어있지 않은 것으로 업데이트
+                        if (sprint.jobName && sprint.jobName !== '미지정') {
+                            jobGroups[sprint.jobNumber].jobName = sprint.jobName;
+                        }
+                        
+                        // 가장 최신 상태 정보 사용
+                        if (sprint.status && sprint.status !== '진행중') {
+                            jobGroups[sprint.jobNumber].status = sprint.status;
+                        }
+                        if (sprint.stopReason) {
+                            jobGroups[sprint.jobNumber].stopReason = sprint.stopReason;
+                        }
+                        if (sprint.deployInfo) {
+                            jobGroups[sprint.jobNumber].deployInfo = sprint.deployInfo;
+                        }
+                        
+                        // 가장 이른 시작일자 사용
+                        if (sprint.startDate) {
+                            if (!jobGroups[sprint.jobNumber].startDate || 
+                                new Date(sprint.startDate) < new Date(jobGroups[sprint.jobNumber].startDate)) {
+                                jobGroups[sprint.jobNumber].startDate = sprint.startDate;
+                            }
+                        }
+                    });
+
+                    // 각 잡별로 출력
+                    Object.keys(jobGroups).forEach(jobNumber => {
+                        const job = jobGroups[jobNumber];
+                        const jobHistoryInfo = getJobInfo(jobNumber);
+                        const totalMinutes = jobHistoryInfo ? jobHistoryInfo.totalMinutes : job.totalMinutes;
+                        const jobTime = formatTime(Math.floor(totalMinutes / 60), totalMinutes % 60);
+                        const startDate = job.startDate ? formatDate(job.startDate) : '';
+                        
+                        output += `${jobNumber} ${job.jobName} (진행상태: ${job.status}, 시작일자: ${startDate}, 누적시간: ${jobTime})\n`;
+                        
+                        // 해당 잡의 스프린트들 출력
+                        job.sprints.forEach(sprint => {
+                            const sprintTime = formatTime(sprint.hours, sprint.minutes);
+                            output += `> ${sprint.name} (누적시간: ${sprintTime})\n`;
+                            if (sprint.memo) {
+                                const memos = sprint.memo.split('\n');
+                                memos.forEach(memo => {
+                                    if (memo.trim()) {
+                                        output += `    - ${memo.trim()}\n`;
+                                    }
+                                });
+                            }
+                            output += '\n';
+                        });
+                        
+                        // 중단/폐기 사유
+                        if (job.stopReason) {
+                            output += `- 중단 사유: ${job.stopReason}\n`;
+                        }
+                        
+                        // 배포 정보
+                        if (job.deployInfo) {
+                            const deployInfos = job.deployInfo.split('\n');
+                            deployInfos.forEach(info => {
+                                if (info.trim()) {
+                                    output += `- ${info.trim()}\n`;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Daily 이슈 (모두 합치기)
+                    const allIssues = data.dailyIssues.filter(issue => issue && issue.trim());
+                    if (allIssues.length > 0) {
+                        allIssues.forEach(issueBlock => {
+                            const issues = issueBlock.split('\n');
+                            issues.forEach(issue => {
+                                if (issue.trim()) {
+                                    output += `- ${issue.trim()}\n`;
+                                }
+                            });
+                        });
+                    }
+                }
+                
+                output += '\n';
+            });
+
+            document.getElementById('output').textContent = output || '여기에 생성된 보고서가 표시됩니다.';
+            
+            // 잡 요약 렌더링
+            renderJobSummary();
+        }
+
+        // 잡 누적시간 요약 렌더링
+        function renderJobSummary() {
+            const summarySection = document.getElementById('jobSummarySection');
+            const summaryList = document.getElementById('jobSummaryList');
+            
+            if (Object.keys(jobHistory).length === 0) {
+                summarySection.style.display = 'none';
+                return;
+            }
+            
+            summarySection.style.display = 'block';
+            let summaryHTML = '';
+            
+            Object.keys(jobHistory).sort().forEach(jobNumber => {
+                const job = jobHistory[jobNumber];
+                const hours = Math.floor(job.totalMinutes / 60);
+                const minutes = job.totalMinutes % 60;
+                
+                summaryHTML += `
+                    <div class="job-summary-item" id="summary-${jobNumber}">
+                        <div class="job-summary-info">
+                            <div class="job-summary-number">${jobNumber}</div>
+                            <div class="job-summary-name">${job.jobName}</div>
+                        </div>
+                        <div class="job-summary-time">
+                            <input type="number" id="hours-${jobNumber}" value="${hours}" min="0" style="width: 45px;" disabled>시
+                            <input type="number" id="minutes-${jobNumber}" value="${minutes}" min="0" max="59" style="width: 45px;" disabled>분
+                        </div>
+                        <div class="job-summary-actions">
+                            <button class="btn-small btn-edit" onclick="editJobTime('${jobNumber}')" id="edit-btn-${jobNumber}">수정</button>
+                            <button class="btn-small btn-save" onclick="saveJobTime('${jobNumber}')" id="save-btn-${jobNumber}" style="display: none;">저장</button>
+                            <button class="btn-small btn-delete" onclick="deleteJob('${jobNumber}')">삭제</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            summaryList.innerHTML = summaryHTML;
+        }
+
+        // 잡 시간 수정 모드
+        function editJobTime(jobNumber) {
+            document.getElementById(`hours-${jobNumber}`).disabled = false;
+            document.getElementById(`minutes-${jobNumber}`).disabled = false;
+            document.getElementById(`edit-btn-${jobNumber}`).style.display = 'none';
+            document.getElementById(`save-btn-${jobNumber}`).style.display = 'inline-block';
+            
+            document.getElementById(`hours-${jobNumber}`).focus();
+        }
+
+        // 잡 시간 저장
+        function saveJobTime(jobNumber) {
+            const hours = parseInt(document.getElementById(`hours-${jobNumber}`).value) || 0;
+            const minutes = parseInt(document.getElementById(`minutes-${jobNumber}`).value) || 0;
+            
+            jobHistory[jobNumber].totalMinutes = hours * 60 + minutes;
+            saveJobHistory();
+            
+            document.getElementById(`hours-${jobNumber}`).disabled = true;
+            document.getElementById(`minutes-${jobNumber}`).disabled = true;
+            document.getElementById(`edit-btn-${jobNumber}`).style.display = 'inline-block';
+            document.getElementById(`save-btn-${jobNumber}`).style.display = 'none';
+            
+            // 보고서 재생성
+            generateReport();
+            
+            alert('누적시간이 업데이트되었습니다.');
+        }
+
+        // 잡 삭제
+        function deleteJob(jobNumber) {
+            if (confirm(`${jobNumber}를 히스토리에서 삭제하시겠습니까?\n보고서의 내용은 유지됩니다.`)) {
+                delete jobHistory[jobNumber];
+                saveJobHistory();
+                renderJobSummary();
+                generateReport();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('dailyIssues').value = '';
+            document.getElementById('isVacation').checked = false;
+            document.getElementById('workContent').style.display = 'block';
+            
+            // 스프린트 초기화
+            document.getElementById('sprintContainer').innerHTML = '';
+            sprintCount = 0;
+        }
+
+        function clearReport() {
+            if (confirm('생성된 보고서를 모두 삭제하시겠습니까?')) {
+                reportData = [];
+                document.getElementById('output').textContent = '여기에 생성된 보고서가 표시됩니다.';
+                document.getElementById('jobSummarySection').style.display = 'none';
+            }
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('output').textContent;
+            if (output === '여기에 생성된 보고서가 표시됩니다.') {
+                alert('복사할 내용이 없습니다.');
+                return;
+            }
+            
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ 복사완료!';
+                btn.style.background = '#28a745';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            });
+        }
+    </script>
+</body>
+</html>
