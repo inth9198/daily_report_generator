@@ -370,6 +370,45 @@
         .btn-delete:hover {
             background: #c82333;
         }
+
+        .report-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #667eea;
+        }
+
+        .report-item:hover {
+            background: #e9ecef;
+        }
+
+        .report-date {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .report-preview {
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            margin: 0 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #reportList {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .hidden-file-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -424,9 +463,17 @@
                 </div>
             </div>
             
-            <button class="btn btn-success copy-btn" onclick="copyToClipboard()">📋 복사하기</button>
+            <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-success" onclick="copyToClipboard()">📋 복사하기</button>
+                <button class="btn btn-secondary" onclick="exportReportData()">💾 데이터 내보내기</button>
+                <button class="btn btn-secondary" onclick="importReportData()">📂 데이터 가져오기</button>
+                <button class="btn btn-danger" onclick="clearReport()">🗑️ 전체 삭제</button>
+            </div>
+            
+            <!-- 보고서 목록 (날짜별로 관리) -->
+            <div id="reportList" style="margin-bottom: 15px;"></div>
+            
             <div class="output-area" id="output">여기에 생성된 보고서가 표시됩니다.</div>
-            <button class="btn btn-danger" onclick="clearReport()">보고서 초기화</button>
         </div>
     </div>
 
@@ -445,6 +492,20 @@
         let sprintCount = 0;
         let jobHistory = {}; // 잡 히스토리
 
+        // 보고서 데이터 저장
+        function saveReportData() {
+            localStorage.setItem('reportData', JSON.stringify(reportData));
+        }
+
+        // 보고서 데이터 불러오기
+        function loadReportData() {
+            const savedData = localStorage.getItem('reportData');
+            if (savedData) {
+                reportData = JSON.parse(savedData);
+                generateReport();
+            }
+        }
+
         // 페이지 로드 시 오늘 날짜로 초기화 및 로컬 스토리지 불러오기
         window.onload = function() {
             const today = new Date().toISOString().split('T')[0];
@@ -455,6 +516,9 @@
             if (savedHistory) {
                 jobHistory = JSON.parse(savedHistory);
             }
+            
+            // 보고서 데이터 불러오기
+            loadReportData();
             
             // 사용자 이름 불러오기
             const savedUserName = localStorage.getItem('userName');
@@ -840,6 +904,7 @@
                 });
             }
 
+            saveReportData(); // 보고서 데이터 저장
             generateReport();
             clearForm();
         }
@@ -987,6 +1052,59 @@
             
             // 잡 요약 렌더링
             renderJobSummary();
+            
+            // 보고서 목록 렌더링
+            renderReportList();
+        }
+
+        // 보고서 목록 렌더링
+        function renderReportList() {
+            const reportList = document.getElementById('reportList');
+            
+            if (reportData.length === 0) {
+                reportList.innerHTML = '';
+                return;
+            }
+            
+            let listHTML = '<div style="margin-bottom: 10px; font-weight: 600; color: #667eea;">📝 저장된 보고서 목록</div>';
+            
+            // 날짜별로 그룹화
+            const dateGroups = {};
+            reportData.forEach((data, index) => {
+                const dateKey = data.date;
+                if (!dateGroups[dateKey]) {
+                    dateGroups[dateKey] = [];
+                }
+                dateGroups[dateKey].push({ data, index });
+            });
+            
+            Object.keys(dateGroups).sort().reverse().forEach(dateKey => {
+                const items = dateGroups[dateKey];
+                const formattedDate = formatDate(dateKey);
+                const isVacation = items[0].data.isVacation;
+                const preview = isVacation ? '연차' : 
+                    (items[0].data.sprints && items[0].data.sprints.length > 0 ? 
+                     `${items[0].data.sprints[0].jobNumber || ''} - ${items.length}개 항목` : '');
+                
+                listHTML += `
+                    <div class="report-item">
+                        <div class="report-date">${formattedDate}</div>
+                        <div class="report-preview">${preview}</div>
+                        <button class="btn-small btn-delete" onclick="deleteReportByDate('${dateKey}')">삭제</button>
+                    </div>
+                `;
+            });
+            
+            reportList.innerHTML = listHTML;
+        }
+
+        // 날짜별 보고서 삭제
+        function deleteReportByDate(date) {
+            if (confirm(`${formatDate(date)} 보고서를 삭제하시겠습니까?`)) {
+                reportData = reportData.filter(data => data.date !== date);
+                saveReportData();
+                generateReport();
+            }
         }
 
         // 잡 누적시간 요약 렌더링
@@ -1081,9 +1199,84 @@
         function clearReport() {
             if (confirm('생성된 보고서를 모두 삭제하시겠습니까?')) {
                 reportData = [];
+                saveReportData();
                 document.getElementById('output').textContent = '여기에 생성된 보고서가 표시됩니다.';
                 document.getElementById('jobSummarySection').style.display = 'none';
+                document.getElementById('reportList').innerHTML = '';
             }
+        }
+
+        // 데이터 내보내기 (JSON 파일로 다운로드)
+        function exportReportData() {
+            const exportData = {
+                reportData: reportData,
+                jobHistory: jobHistory,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `daily-report-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert('데이터가 내보내기되었습니다!');
+        }
+
+        // 데이터 가져오기 (JSON 파일 업로드)
+        function importReportData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const importData = JSON.parse(event.target.result);
+                        
+                        if (!importData.reportData || !importData.jobHistory) {
+                            alert('올바른 형식의 백업 파일이 아닙니다.');
+                            return;
+                        }
+                        
+                        if (confirm('기존 데이터를 덮어쓰시겠습니까?\n취소를 누르면 기존 데이터에 추가됩니다.')) {
+                            // 덮어쓰기
+                            reportData = importData.reportData;
+                            jobHistory = importData.jobHistory;
+                        } else {
+                            // 병합
+                            reportData = [...reportData, ...importData.reportData];
+                            // 잡 히스토리 병합
+                            Object.keys(importData.jobHistory).forEach(jobNumber => {
+                                if (!jobHistory[jobNumber]) {
+                                    jobHistory[jobNumber] = importData.jobHistory[jobNumber];
+                                } else {
+                                    // 누적시간 더하기
+                                    jobHistory[jobNumber].totalMinutes += importData.jobHistory[jobNumber].totalMinutes;
+                                }
+                            });
+                        }
+                        
+                        saveReportData();
+                        saveJobHistory();
+                        generateReport();
+                        alert('데이터를 성공적으로 가져왔습니다!');
+                    } catch (error) {
+                        alert('파일을 읽는 중 오류가 발생했습니다: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
 
         function copyToClipboard() {
